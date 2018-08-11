@@ -1,16 +1,29 @@
 import React, { Component } from 'react';
-import Konva from 'konva';
 import './App.css';
-import {Layer, Rect, Stage} from 'react-konva';
+import {Stage, Layer, Rect} from 'react-konva';
+
+import cracked_ground from './img/cracked_ground.svg';
 
 class Tile extends React.Component {
   state = {
-    color: 'green'
+    color: 'white',
+    bg_img: null,
+    scale: { x: this.props.tile_size / 200, y: this.props.tile_size / 200}
+  }
+
+  componentDidMount() {
+    const image = new window.Image();
+    image.onload = () => {
+      this.setState({
+        bg_img: image
+      });
+    }
+    image.src = cracked_ground;
   }
 
   handleClick = () => {
     this.setState({
-      color: Konva.Util.getRandomColor()
+      bg_img: null
     });
   }
 
@@ -18,7 +31,7 @@ class Tile extends React.Component {
     return (
       <Rect
         x={this.props.x} y={this.props.y} width={this.props.tile_size} height={this.props.tile_size}
-        fill={this.state.color}
+        fillPatternImage={this.state.bg_img} fillPatternScale={this.state.scale}
         onClick={this.handleClick}
       />
     );
@@ -27,8 +40,7 @@ class Tile extends React.Component {
 
 class TileMap extends React.Component {
   state = {
-    tile_size: 49,
-    tile_border_size: 1,
+    tile_size: this.props.tile_size,
     tiles: []
   }
 
@@ -37,9 +49,9 @@ class TileMap extends React.Component {
     let size = this.props.size;
     for (let i = 0; i < size; i++) {
       let row = [];
-      let x = i * this.state.tile_size + (i + 1) * this.state.tile_border_size
+      let x = i * this.state.tile_size
       for (let j = 0; j < size; j++) {
-        let y = j * this.state.tile_size + (j + 1) * this.state.tile_border_size
+        let y = j * this.state.tile_size
         row.push({i: i, j: j, x: x, y: y});
       }
       tiles.push(row);
@@ -63,6 +75,17 @@ class TileMap extends React.Component {
   }
 }
 
+class StageMap extends React.Component {
+    render() {
+    let stage_size = this.props.size * this.props.tile_size;
+    return (
+      <Stage className="App-center" width={stage_size} height={stage_size}>
+        <TileMap size={this.props.size} tile_size={this.props.tile_size}/>
+      </Stage>
+    );
+  }
+}
+
 class App extends Component {
   render() {
     return (
@@ -73,9 +96,13 @@ class App extends Component {
         <p className="App-intro">
           Your world is dead, you must travel through rifts in the Void in order to find a new world for your people.
         </p>
-        <Stage className="App-center" width={500} height={500}>
-          <TileMap size={10}/>
-        </Stage>
+        <table className="App-table" border="1px">
+          <tr><th>Void Map</th><th>Ressources</th></tr>
+          <tr>
+            <td><StageMap size={10} tile_size={50}/></td>
+            <td></td>
+          </tr>
+        </table>
       </div>
     );
   }
