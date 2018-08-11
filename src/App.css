@@ -31,3 +31,8 @@
 .App-selected {
   background-color: blue;
 }
+
+p.App-priceTag {
+  margin-top: 0px;
+  font-size: 10px;
+}

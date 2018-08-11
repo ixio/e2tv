@@ -44,12 +44,18 @@ class TileMap extends React.Component {
 class Buildings extends React.Component {
   render() {
     let buildings = Object.entries(this.props.images).map(([key, val]) => {
+      if (key === 'soil') {
+        return;
+      }
       let className = "App-building";
       if (key === this.props.selected_building) {
         className += " App-selected"
       }
       return (
-        <span onClick={() => { this.props.selectBuilding(key) }} key={key}><img className={className} height={80} src={val.src} alt={key}/></span>
+        <span onClick={() => { this.props.selectBuilding(key) }} key={key}>
+          <img className={className} height={80} src={val.src} alt={key}/>
+          <p className="App-priceTag">Price: {val.price} M</p>
+        </span>
       );
     });
     return (
@@ -65,11 +71,13 @@ class Game extends React.Component {
   state = {
     selected_building: null,
     images: {
-      mine: { src: mine },
-      power: { src: power },
+      mine: { src: mine, price: 50 },
+      power: { src: power, price: 80 },
       soil: { src: soil }
     },
-    tiles: []
+    tiles: [],
+    mineral_count: 120,
+    power_count: 0
   }
 
   selectBuilding = (building) => {
@@ -80,11 +88,15 @@ class Game extends React.Component {
 
   buildBuilding = (i, j) => {
     if (this.state.selected_building) {
-      let tiles = this.state.tiles.slice();
-      tiles[i][j].type = this.state.selected_building;
-      this.setState({
-        tiles: tiles
-      });
+      let price = this.state.images[this.state.selected_building].price;
+      if (this.state.mineral_count >= price) {
+        let tiles = this.state.tiles.slice();
+        tiles[i][j].type = this.state.selected_building;
+        this.setState({
+          tiles: tiles,
+          mineral_count: this.state.mineral_count - price
+        });
+      }
     }
   }
 
@@ -135,8 +147,8 @@ class Game extends React.Component {
             </Stage>
           </td>
           <td>
-            <p>0 Energy</p>
-            <p>0 Minerals</p>
+            <p>{this.state.power_count} Energy</p>
+            <p>{this.state.mineral_count} Minerals</p>
           </td>
         </tr>
         <tr><th>Construction</th></tr>
