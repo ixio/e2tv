@@ -16,6 +16,18 @@
   text-align: center;
 }
 
+.App-table th {
+  height: 25px;
+}
+
 .App-center {
   display: inline-block;
+}
+
+.App-building {
+  padding: 5px;
+}
+
+.App-selected {
+  background-color: blue;
 }

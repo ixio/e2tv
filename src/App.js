@@ -2,7 +2,9 @@ import React, { Component } from 'react';
 import './App.css';
 import {Stage, Layer, Rect} from 'react-konva';
 
-import cracked_ground from './img/cracked_ground.svg';
+import soil from './img/soil.svg';
+import mine from './img/mine.svg';
+import power from './img/power.svg';
 
 class Tile extends React.Component {
   state = {
@@ -18,7 +20,7 @@ class Tile extends React.Component {
         bg_img: image
       });
     }
-    image.src = cracked_ground;
+    image.src = soil;
   }
 
   handleClick = () => {
@@ -75,13 +77,81 @@ class TileMap extends React.Component {
   }
 }
 
-class StageMap extends React.Component {
-    render() {
+class Buildings extends React.Component {
+  render() {
+    let buildings = Object.entries(this.props.images).map(([key, val]) => {
+      let className = "App-building";
+      if (key === this.props.selected_building) {
+        className += " App-selected"
+      }
+      return (
+        <span onClick={() => { this.props.selectBuilding(key) }} key={key}><img className={className} height={80} src={val.src} alt={key}/></span>
+      );
+    });
+    return (
+      <div>
+        {buildings}
+      </div>
+    );
+  }
+
+}
+
+class Game extends React.Component {
+  state = {
+    selected_building: null,
+    images: {
+      mine: { src: mine },
+      power: { src: power },
+      soil: { src: soil }
+    }
+  }
+
+  selectBuilding = (building) => {
+    this.setState({
+      selected_building: building
+    });
+  }
+
+  componentDidMount() {
+    const loadImage = (img_name) => {
+      const images = Object.assign({}, this.state.images);
+      const image = new window.Image();
+      images[img_name].img = image;
+      image.onload = () => {
+        this.setState({
+          images: images
+        });
+      }
+      image.src = images[img_name].src;
+    }
+
+    loadImage('mine');
+    loadImage('power');
+    loadImage('soil');
+  }
+
+  render() {
     let stage_size = this.props.size * this.props.tile_size;
     return (
-      <Stage className="App-center" width={stage_size} height={stage_size}>
-        <TileMap size={this.props.size} tile_size={this.props.tile_size}/>
-      </Stage>
+      <table className="App-table" border="1px">
+      <tbody>
+        <tr><th>Void Map</th><th>Ressources</th></tr>
+        <tr>
+          <td rowSpan={3}>
+            <Stage className="App-center" width={stage_size} height={stage_size}>
+              <TileMap size={this.props.size} tile_size={this.props.tile_size}/>
+            </Stage>
+          </td>
+          <td>
+            <p>0 Energy</p>
+            <p>0 Minerals</p>
+          </td>
+        </tr>
+        <tr><th>Construction</th></tr>
+        <tr><td><Buildings selected_building={this.state.selected_building} images={this.state.images} selectBuilding={this.selectBuilding}/></td></tr>
+      </tbody>
+      </table>
     );
   }
 }
@@ -96,13 +166,7 @@ class App extends Component {
         <p className="App-intro">
           Your world is dead, you must travel through rifts in the Void in order to find a new world for your people.
         </p>
-        <table className="App-table" border="1px">
-          <tr><th>Void Map</th><th>Ressources</th></tr>
-          <tr>
-            <td><StageMap size={10} tile_size={50}/></td>
-            <td></td>
-          </tr>
-        </table>
+        <Game size={10} tile_size={50}/>
       </div>
     );
   }
