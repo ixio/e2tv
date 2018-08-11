@@ -8,65 +8,29 @@ import power from './img/power.svg';
 
 class Tile extends React.Component {
   state = {
-    color: 'white',
-    bg_img: null,
     scale: { x: this.props.tile_size / 200, y: this.props.tile_size / 200}
-  }
-
-  componentDidMount() {
-    const image = new window.Image();
-    image.onload = () => {
-      this.setState({
-        bg_img: image
-      });
-    }
-    image.src = soil;
-  }
-
-  handleClick = () => {
-    this.setState({
-      bg_img: null
-    });
   }
 
   render() {
     return (
       <Rect
         x={this.props.x} y={this.props.y} width={this.props.tile_size} height={this.props.tile_size}
-        fillPatternImage={this.state.bg_img} fillPatternScale={this.state.scale}
-        onClick={this.handleClick}
+        fillPatternImage={this.props.img} fillPatternScale={this.state.scale}
+        onClick={this.props.handleClick}
       />
     );
   }
 }
 
 class TileMap extends React.Component {
-  state = {
-    tile_size: this.props.tile_size,
-    tiles: []
-  }
-
-  componentDidMount() {
-    let tiles = [];
-    let size = this.props.size;
-    for (let i = 0; i < size; i++) {
-      let row = [];
-      let x = i * this.state.tile_size
-      for (let j = 0; j < size; j++) {
-        let y = j * this.state.tile_size
-        row.push({i: i, j: j, x: x, y: y});
-      }
-      tiles.push(row);
-    }
-    this.setState({
-      tiles: tiles
-    });
-  }
-
   render() {
-    const tiles = [].concat.apply([], this.state.tiles).map(tile => {
+    const tiles = [].concat.apply([], this.props.tiles).map(tile => {
+      let img = this.props.images[tile.type].img;
+      let handleClick = () => {
+        this.props.buildBuilding(tile.i, tile.j)
+      };
       return (
-        <Tile key={tile.i + '-' + tile.j} x={tile.x} y={tile.y} tile_size={this.state.tile_size}/>
+        <Tile key={tile.i + '-' + tile.j} x={tile.x} y={tile.y} tile_size={this.props.tile_size} img={img} handleClick={handleClick}/>
       );
     })
     return (
@@ -104,7 +68,8 @@ class Game extends React.Component {
       mine: { src: mine },
       power: { src: power },
       soil: { src: soil }
-    }
+    },
+    tiles: []
   }
 
   selectBuilding = (building) => {
@@ -113,7 +78,18 @@ class Game extends React.Component {
     });
   }
 
+  buildBuilding = (i, j) => {
+    if (this.state.selected_building) {
+      let tiles = this.state.tiles.slice();
+      tiles[i][j].type = this.state.selected_building;
+      this.setState({
+        tiles: tiles
+      });
+    }
+  }
+
   componentDidMount() {
+    // Load Images
     const loadImage = (img_name) => {
       const images = Object.assign({}, this.state.images);
       const image = new window.Image();
@@ -125,10 +101,25 @@ class Game extends React.Component {
       }
       image.src = images[img_name].src;
     }
-
     loadImage('mine');
     loadImage('power');
     loadImage('soil');
+
+    // Generate Tiles
+    let tiles = [];
+    let size = this.props.size;
+    for (let i = 0; i < size; i++) {
+      let row = [];
+      let x = i * this.props.tile_size
+      for (let j = 0; j < size; j++) {
+        let y = j * this.props.tile_size
+        row.push({i: i, j: j, x: x, y: y, type: 'soil'});
+      }
+      tiles.push(row);
+    }
+    this.setState({
+      tiles: tiles
+    });
   }
 
   render() {
@@ -140,7 +131,7 @@ class Game extends React.Component {
         <tr>
           <td rowSpan={3}>
             <Stage className="App-center" width={stage_size} height={stage_size}>
-              <TileMap size={this.props.size} tile_size={this.props.tile_size}/>
+              <TileMap tiles={this.state.tiles} tile_size={this.props.tile_size} images={this.state.images} buildBuilding={this.buildBuilding}/>
             </Stage>
           </td>
           <td>
