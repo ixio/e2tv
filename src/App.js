@@ -6,6 +6,12 @@ import soil from './img/soil.svg';
 import mine from './img/mine.svg';
 import power from './img/power.svg';
 
+function NoTilesLeft(message) {
+    this.name = 'NoTilesLeft';
+    this.message = message;
+}
+NoTilesLeft.prototype = new Error();
+
 class Tile extends React.Component {
   state = {
     scale: { x: this.props.tile_size / 200, y: this.props.tile_size / 200}
@@ -76,8 +82,10 @@ class Game extends React.Component {
       soil: { src: soil }
     },
     tiles: [],
-    mineral_count: 120,
-    power_count: 0
+    mineral_count: this.props.mineral_start,
+    power_count: 0,
+    started: false,
+    end: 0
   }
 
   componentDidMount() {
@@ -126,21 +134,46 @@ class Game extends React.Component {
 
   tick() {
     let randomTile = (tiles) => {
-      let nonVoidTiles = [].concat.apply([], tiles).filter(tile => tile.type !== "void")
+      let nonVoidTiles = [].concat.apply([], tiles).filter(tile => tile.type !== "void");
+      if (nonVoidTiles.length === 0) {
+        throw new NoTilesLeft();
+      }
       let x = Math.floor(Math.random() * nonVoidTiles.length);
       return nonVoidTiles[x];
     }
-    let tiles = this.state.tiles.slice();
-    randomTile(tiles).type = 'void';
-    let mine_count = [].concat.apply([], tiles).filter(tile => tile.type === "mine").reduce((a, r) => { return a + 1 }, 0);
-    let mineral_count = this.state.mineral_count + mine_count * 2;
-    let pow_count = [].concat.apply([], tiles).filter(tile => tile.type === "power").reduce((a, r) => { return a + 1 }, 0);
-    let power_count = this.state.power_count + pow_count * 2;
-    this.setState({
-      tiles: tiles,
-      mineral_count: mineral_count,
-      power_count: power_count
-    });
+    if (this.state.end === 0 && this.state.started) {
+      try {
+        let tiles = this.state.tiles.slice();
+        if (this.state.started) {
+          randomTile(tiles).type = 'void';
+          this.setState({
+            tiles: tiles
+          });
+        }
+        let mine_count = [].concat.apply([], tiles).filter(tile => tile.type === "mine").reduce((a, r) => { return a + 1 }, 0);
+        let mineral_count = this.state.mineral_count + mine_count * 2 + 1;
+        let pow_count = [].concat.apply([], tiles).filter(tile => tile.type === "power").reduce((a, r) => { return a + 1 }, 0);
+        let power_count = this.state.power_count + pow_count * 2;
+        if (power_count >= this.props.goal) {
+          this.setState({
+            end: 2
+          });
+        } else {
+          this.setState({
+            mineral_count: mineral_count,
+            power_count: power_count
+          });
+        }
+      } catch(err) {
+        if (err instanceof NoTilesLeft) {
+          this.setState({
+            end: 1
+          });
+        } else {
+          throw err;
+        }
+      }
+    }
   }
 
   selectBuilding = (building) => {
@@ -153,6 +186,11 @@ class Game extends React.Component {
     if (this.state.selected_building) {
       let price = this.state.images[this.state.selected_building].price;
       if (this.state.mineral_count >= price) {
+        if (!this.state.started) {
+          this.setState({
+            started: true
+          })
+        }
         let tiles = this.state.tiles.slice();
         tiles[i][j].type = this.state.selected_building;
         let mineral_count = this.state.mineral_count - price;
@@ -164,32 +202,67 @@ class Game extends React.Component {
     }
   }
 
+  restart = () => {
+    let tiles = this.state.tiles.slice();
+    [].concat.apply([], tiles).forEach((tile) =>{
+      tile.type = 'soil';
+    });
+    this.setState({
+      selected_building: null,
+      tiles: tiles,
+      mineral_count: this.props.mineral_start,
+      power_count: 0,
+      end: 0,
+      started: 0
+    });
+  }
+
   render() {
     let stage_size = this.props.size * this.props.tile_size;
-    return (
-      <table className="App-table" border="1px">
-      <tbody>
-        <tr><th>Void Map</th><th>Ressources</th></tr>
-        <tr>
-          <td rowSpan={3}>
-            <Stage className="App-center" width={stage_size} height={stage_size}>
-              <TileMap tiles={this.state.tiles} tile_size={this.props.tile_size} images={this.state.images} buildBuilding={this.buildBuilding}/>
-            </Stage>
-          </td>
-          <td>
-            <p>{this.state.power_count} Energy</p>
-            <p>{this.state.mineral_count} Minerals</p>
-          </td>
-        </tr>
-        <tr><th>Construction</th></tr>
-        <tr><td><Buildings selected_building={this.state.selected_building} images={this.state.images} selectBuilding={this.selectBuilding}/></td></tr>
-      </tbody>
-      </table>
-    );
+    if (this.state.end === 0) {
+      return (
+        <table className="App-table" border="1px">
+        <tbody>
+          <tr><th>Void Map</th><th>Ressources</th></tr>
+          <tr>
+            <td rowSpan={3}>
+              <Stage className="App-center" width={stage_size} height={stage_size}>
+                <TileMap tiles={this.state.tiles} tile_size={this.props.tile_size} images={this.state.images} buildBuilding={this.buildBuilding}/>
+              </Stage>
+            </td>
+            <td>
+              <p>{this.state.power_count} Energy</p>
+              <p>{this.state.mineral_count} Minerals</p>
+            </td>
+          </tr>
+          <tr><th>Construction</th></tr>
+          <tr><td><Buildings selected_building={this.state.selected_building} images={this.state.images} selectBuilding={this.selectBuilding}/></td></tr>
+        </tbody>
+        </table>
+      );
+    } else if (this.state.end === 1) {
+      return (
+        <div>
+          <h1>YOU LOST</h1>
+          <h2>You and your people have been lost to the Void, you have simply ceased to exist.</h2>
+          <p><button onClick={this.restart}>Reset Game</button></p>
+        </div>
+      );
+    } else if (this.state.end === 2) {
+      return (
+        <div>
+          <h1>YOU WIN</h1>
+          <h2>You have managed to open a Rift to a new world for your people. (try not to break it this time!)</h2>
+          <p><button onClick={this.restart}>Reset Game</button></p>
+        </div>
+      );
+    }
   }
 }
 
 class App extends Component {
+  goal = 200;
+
   render() {
     return (
       <div className="App">
@@ -199,7 +272,13 @@ class App extends Component {
         <p className="App-intro">
           Your world is dead, you must travel through rifts in the Void in order to find a new world for your people.
         </p>
-        <Game size={10} tile_size={50}/>
+        <p className="App-intro">
+          You have some minerals stored to build Mines and PowerGenerator, you need {this.goal} Power to open a Rift to a new world.
+        </p>
+        <p className="App-intro">
+          Beware as you build, the Void will re-assert itself and the remaining wasteland will disappear: act quickly!
+        </p>
+        <Game size={10} tile_size={50} goal={this.goal} mineral_start={150}/>
       </div>
     );
   }
