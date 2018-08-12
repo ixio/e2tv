@@ -45,7 +45,7 @@ class Buildings extends React.Component {
   render() {
     let buildings = Object.entries(this.props.images).map(([key, val]) => {
       if (key === 'soil') {
-        return;
+        return null;
       }
       let className = "App-building";
       if (key === this.props.selected_building) {
@@ -80,26 +80,6 @@ class Game extends React.Component {
     power_count: 0
   }
 
-  selectBuilding = (building) => {
-    this.setState({
-      selected_building: building
-    });
-  }
-
-  buildBuilding = (i, j) => {
-    if (this.state.selected_building) {
-      let price = this.state.images[this.state.selected_building].price;
-      if (this.state.mineral_count >= price) {
-        let tiles = this.state.tiles.slice();
-        tiles[i][j].type = this.state.selected_building;
-        this.setState({
-          tiles: tiles,
-          mineral_count: this.state.mineral_count - price
-        });
-      }
-    }
-  }
-
   componentDidMount() {
     // Load Images
     const loadImage = (img_name) => {
@@ -132,6 +112,48 @@ class Game extends React.Component {
     this.setState({
       tiles: tiles
     });
+
+    // Set Timer
+    this.timerID = setInterval(
+      () => this.tick(),
+      1000
+    );
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.timerID);
+  }
+
+  tick() {
+    let mine_count = [].concat.apply([], this.state.tiles).filter(tile => tile.type === "mine").reduce((a, r) => { return a + 1 }, 0);
+    let mineral_count = this.state.mineral_count + mine_count * 2;
+    let pow_count = [].concat.apply([], this.state.tiles).filter(tile => tile.type === "power").reduce((a, r) => { return a + 1 }, 0);
+    let power_count = this.state.power_count + pow_count * 2;
+    this.setState({
+      mineral_count: mineral_count,
+      power_count: power_count
+    });
+  }
+
+  selectBuilding = (building) => {
+    this.setState({
+      selected_building: building
+    });
+  }
+
+  buildBuilding = (i, j) => {
+    if (this.state.selected_building) {
+      let price = this.state.images[this.state.selected_building].price;
+      if (this.state.mineral_count >= price) {
+        let tiles = this.state.tiles.slice();
+        tiles[i][j].type = this.state.selected_building;
+        let mineral_count = this.state.mineral_count - price;
+        this.setState({
+          tiles: tiles,
+          mineral_count: mineral_count
+        });
+      }
+    }
   }
 
   render() {
