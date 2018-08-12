@@ -25,7 +25,7 @@ class Tile extends React.Component {
 class TileMap extends React.Component {
   render() {
     const tiles = [].concat.apply([], this.props.tiles).map(tile => {
-      let img = this.props.images[tile.type].img;
+      let img = (tile.type === 'void') ? null : this.props.images[tile.type].img;
       let handleClick = () => {
         this.props.buildBuilding(tile.i, tile.j)
       };
@@ -125,11 +125,19 @@ class Game extends React.Component {
   }
 
   tick() {
-    let mine_count = [].concat.apply([], this.state.tiles).filter(tile => tile.type === "mine").reduce((a, r) => { return a + 1 }, 0);
+    let randomTile = (tiles) => {
+      let i = Math.floor(Math.random() * this.props.size);
+      let j = Math.floor(Math.random() * this.props.size);
+      return tiles[i][j];
+    }
+    let tiles = this.state.tiles.slice();
+    randomTile(tiles).type = 'void';
+    let mine_count = [].concat.apply([], tiles).filter(tile => tile.type === "mine").reduce((a, r) => { return a + 1 }, 0);
     let mineral_count = this.state.mineral_count + mine_count * 2;
-    let pow_count = [].concat.apply([], this.state.tiles).filter(tile => tile.type === "power").reduce((a, r) => { return a + 1 }, 0);
+    let pow_count = [].concat.apply([], tiles).filter(tile => tile.type === "power").reduce((a, r) => { return a + 1 }, 0);
     let power_count = this.state.power_count + pow_count * 2;
     this.setState({
+      tiles: tiles,
       mineral_count: mineral_count,
       power_count: power_count
     });
