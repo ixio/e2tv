@@ -264,6 +264,9 @@ class App extends Component {
   goal = 200;
 
   render() {
+    let audio = new Audio('music_almost_.mp3');
+    audio.loop = true;
+    audio.play();
     return (
       <div className="App">
         <header className="App-header">
