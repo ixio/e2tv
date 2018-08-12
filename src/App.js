@@ -126,9 +126,9 @@ class Game extends React.Component {
 
   tick() {
     let randomTile = (tiles) => {
-      let i = Math.floor(Math.random() * this.props.size);
-      let j = Math.floor(Math.random() * this.props.size);
-      return tiles[i][j];
+      let nonVoidTiles = [].concat.apply([], tiles).filter(tile => tile.type !== "void")
+      let x = Math.floor(Math.random() * nonVoidTiles.length);
+      return nonVoidTiles[x];
     }
     let tiles = this.state.tiles.slice();
     randomTile(tiles).type = 'void';
