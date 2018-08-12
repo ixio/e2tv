@@ -146,6 +146,7 @@ class Game extends React.Component {
         let tiles = this.state.tiles.slice();
         if (this.state.started) {
           randomTile(tiles).type = 'void';
+          (new Audio('crunch.mp3')).play();
           this.setState({
             tiles: tiles
           });
@@ -198,6 +199,7 @@ class Game extends React.Component {
           tiles: tiles,
           mineral_count: mineral_count
         });
+        (new Audio(this.state.selected_building + '.mp3')).play();
       }
     }
   }
